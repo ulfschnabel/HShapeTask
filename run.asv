@@ -28,15 +28,18 @@ while ~logchoice
         logchoice = 1;
     end
 end
-calibrateTracker
+
 if ~isempty(nts); logon = 1; end
 grey = .5;
 cgopen(1024, 768, 32,60 ,0)
-cgflip(grey, grey, grey)
+cgflip(grey)
 cgpenwid(1)
 cgpencol(1,0,0)
 cgfont('Arial',30)
 cgflip(grey,grey,grey)
+stimuli = {};
+load('GoodHalfCircle');
+
 targets = [7, 45];
 
 distractors = [35, 48];
@@ -57,7 +60,6 @@ if str2num(session) == 1
     
     hits = [0 0];
     stage = 0;
-    n = 0;
     Par.Ndistract = 0;
     while Par.Ndistract < n
         ESC = 0;
@@ -88,7 +90,6 @@ if str2num(session) == 1
         fixtime = tic;
         fixation = 0;
         %wait for fixation
-        eye_used = 0;
         while ~fixation
             if Eyelink( 'NewFloatSampleAvailable') > 0
                 % get the sample in the form of an event structure
@@ -104,14 +105,12 @@ if str2num(session) == 1
                     end
                 end
             end
-            if abs(mx - 512) < 30 && abs(my - 768/2) < 30
+            if abs(mx) < 15 && abs(my) < 15
                 fixation = 1;
             end
         end
-        disp('Good')
         %check if fixation is kept
-        fixtime = tic;
-        while toc(fixtime) < 2
+        while toc(fixtime) < 0.3
             if Eyelink( 'NewFloatSampleAvailable') > 0
                 % get the sample in the form of an event structure
                 evt = Eyelink( 'NewestFloatSample');
@@ -126,18 +125,15 @@ if str2num(session) == 1
                     end
                 end
             end
-            if ~(abs(mx - 512) < 30 && abs(my - 768/2) < 30)
+            if ~(abs(mx) < 15 && abs(my) < 15)
                 cgpencol(1,0,0)
                 cgtext('Please keep fixating.',0,0)
                 cgflip(grey,grey,grey)
                 cgpencol(1,0,0)
                 pause(0.5)
-                cgflip(grey,grey,grey)
                 abort = 1;
             end
         end
-        disp('Done')
-        abort = 1;
         %Draw display
         if ~abort
             Par.Target = trials(1, 1);
@@ -276,19 +272,11 @@ cgshut
 end
 
 
-
-function details = filldetails()
-n = 0;
-for t = 1:2
-    for d = 1:2
-        for tp = 1:3
-            for dp = 1:3
-                if tp ~= dp
-                    n = n+1;
-                    details(n, :) = [t, d, tp, dp, n];
-                end
-            end
-        end
-    end
-end
+function calibrateTracker
+    screenNumber=max(Screen('Screens'));
+    window=Screen('OpenWindow', 1, [0.5 0.5 0.5], [0 0 1024 768]);
+    el=EyelinkInitDefaults(window);
+    EyelinkDoTrackerSetup(el);
+    EyelinkDoDriftCorrection(el);
+    Screen('CloseAll');
 end
